@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Silent Timer</string>
+    <string name="restore_volume">Restore volume:</string>
+    <string name="silence_until">Silence until</string>
+    <string name="silence_for">Silence for</string>
+    <string name="btn_silent_for_while">Silent for a while</string>
+    <string name="btn_mute_now">Mute now</string>
+    <string name="now">NOW</string>
+    <string name="permission_needed">Grant Do Not Disturb access in Settings</string>
+    <string name="open_settings">Open Settings</string>
+</resources>

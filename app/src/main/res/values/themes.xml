@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.SilentTimer" parent="Theme.MaterialComponents.Light.NoActionBar">
+        <item name="colorPrimary">#444444</item>
+        <item name="colorPrimaryVariant">#222222</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="android:windowBackground">#TRANSPARENT</item>
+        <item name="android:backgroundDimEnabled">true</item>
+    </style>
+</resources>

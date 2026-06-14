@@ -1,0 +1,242 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="@color/white">
+
+    <!-- Top bar: Restore volume -->
+    <LinearLayout
+        android:id="@+id/topBar"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="8dp"
+        android:background="@color/white"
+        android:elevation="4dp">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/restore_volume"
+            android:textSize="14sp"
+            android:textColor="@color/text_hour"
+            android:layout_marginEnd="8dp"/>
+
+        <SeekBar
+            android:id="@+id/volumeSeekBar"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:max="100"
+            android:progress="80"
+            android:progressTint="#88CC44"
+            android:thumbTint="#888888"/>
+
+        <ImageView
+            android:id="@+id/volumeIconLow"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:src="@android:drawable/ic_lock_silent_mode"
+            android:tint="#888888"
+            android:layout_marginStart="4dp"/>
+
+        <ImageView
+            android:id="@+id/volumeIconHigh"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:src="@android:drawable/ic_lock_silent_mode_off"
+            android:tint="#888888"
+            android:layout_marginStart="4dp"/>
+
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/divider"/>
+
+    <!-- Pickers area -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+
+        <!-- Left picker bg -->
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/bg_left"/>
+
+        <!-- Right picker bg -->
+        <View
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="end"
+            android:background="@color/bg_right"
+            android:id="@+id/rightBg"/>
+
+        <!-- Two RecyclerViews side by side -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal">
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvUntil"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:overScrollMode="never"
+                android:clipToPadding="false"/>
+
+            <View
+                android:layout_width="1dp"
+                android:layout_height="match_parent"
+                android:background="@color/divider"/>
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvDuration"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:overScrollMode="never"
+                android:clipToPadding="false"/>
+
+        </LinearLayout>
+
+        <!-- Center selection line top -->
+        <View
+            android:id="@+id/selectionLineTop"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/divider"
+            android:layout_gravity="center_vertical"/>
+
+        <!-- Center selection line bottom (offset by item height) -->
+        <View
+            android:id="@+id/selectionLineBottom"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@color/divider"
+            android:layout_gravity="center_vertical"/>
+
+        <!-- Label overlay left: "Silence until 20:34" -->
+        <LinearLayout
+            android:id="@+id/labelUntil"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="#CC333333"
+            android:padding="6dp">
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/silence_until"
+                android:textColor="@color/white"
+                android:textSize="11sp"/>
+
+            <TextView
+                android:id="@+id/tvUntilTime"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="20:34"
+                android:textColor="@color/white"
+                android:textSize="22sp"
+                android:textStyle="bold"/>
+        </LinearLayout>
+
+        <!-- Label overlay right: "Silence for 00:15" -->
+        <LinearLayout
+            android:id="@+id/labelFor"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical|end"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:background="#CC333333"
+            android:padding="6dp">
+
+            <!-- NOW tag -->
+            <TextView
+                android:id="@+id/tvNowTag"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/now"
+                android:textColor="@color/white"
+                android:textSize="9sp"
+                android:background="#888888"
+                android:paddingStart="4dp"
+                android:paddingEnd="4dp"
+                android:visibility="gone"/>
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/silence_for"
+                android:textColor="@color/white"
+                android:textSize="11sp"/>
+
+            <TextView
+                android:id="@+id/tvForDuration"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="00:15"
+                android:textColor="@color/white"
+                android:textSize="22sp"
+                android:textStyle="bold"/>
+        </LinearLayout>
+
+    </FrameLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/divider"/>
+
+    <!-- Bottom buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="72dp"
+        android:orientation="horizontal"
+        android:background="@color/button_bg">
+
+        <Button
+            android:id="@+id/btnSilentForAWhile"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="@string/btn_silent_for_while"
+            android:drawableStart="@android:drawable/ic_lock_silent_mode"
+            android:drawablePadding="8dp"
+            android:backgroundTint="@color/button_bg"
+            android:textColor="@color/text_hour"
+            android:textSize="14sp"
+            style="?attr/borderlessButtonStyle"/>
+
+        <View
+            android:layout_width="1dp"
+            android:layout_height="match_parent"
+            android:background="@color/button_divider"/>
+
+        <Button
+            android:id="@+id/btnMuteNow"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:text="@string/btn_mute_now"
+            android:drawableStart="@android:drawable/ic_lock_silent_mode"
+            android:drawablePadding="8dp"
+            android:backgroundTint="@color/button_bg"
+            android:textColor="@color/text_hour"
+            android:textSize="14sp"
+            style="?attr/borderlessButtonStyle"/>
+
+    </LinearLayout>
+
+</LinearLayout>
