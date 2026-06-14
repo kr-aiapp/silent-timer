@@ -29,8 +29,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var pickerUntil: TimePicker
     private lateinit var pickerDuration: TimePicker
 
-    private var durationSteps = 1            // 15-min steps; default 15 min
-    private var nowSteps = 0                 // current time rounded to 15-min steps
+    private val step = TimePicker.STEP_MINUTES   // 5-minute granularity
+    private var durationSteps = 3            // default 15 min (3 x 5 min)
+    private var nowSteps = 0                 // current time rounded to 5-min steps
     private var syncing = false             // guard against mirror feedback loop
     private var exactAlarmAsked = false      // only prompt once per session
 
@@ -122,7 +123,7 @@ class MainActivity : AppCompatActivity() {
     private fun computeNow() {
         val now = Calendar.getInstance()
         val nowMin = now.get(Calendar.HOUR_OF_DAY) * 60 + now.get(Calendar.MINUTE)
-        nowSteps = Math.round(nowMin / 15f)
+        nowSteps = Math.round(nowMin.toFloat() / step)
     }
 
     private fun setupPickers() {
@@ -143,7 +144,7 @@ class MainActivity : AppCompatActivity() {
         parent.addView(pickerUntil, leftIndex)
         parent.addView(pickerDuration, leftIndex + 2) // +2 to sit after the divider
 
-        // Live mirroring: until = nowSteps + duration  (constant offset in 15-min steps)
+        // Live mirroring: until = nowSteps + duration  (constant offset in 5-min steps)
         pickerDuration.onPositionChanged = { pos ->
             if (!syncing) {
                 syncing = true
@@ -208,7 +209,7 @@ class MainActivity : AppCompatActivity() {
                 Toast.makeText(this, "Wybierz czas wyciszenia", Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
-            SilenceController.mute(this, durationSteps * 15, binding.switchVibrate.isChecked)
+            SilenceController.mute(this, durationSteps * step, binding.switchVibrate.isChecked)
             finish()
         }
 
@@ -243,12 +244,12 @@ class MainActivity : AppCompatActivity() {
     // ---------- Labels ----------
 
     private fun updateLabelsLive(durPos: Float) {
-        val totalMin = (durPos * 15).toInt()
+        val totalMin = (durPos * step).toInt()
         renderLabels(totalMin)
     }
 
     private fun updateLabels() {
-        renderLabels(durationSteps * 15)
+        renderLabels(durationSteps * step)
     }
 
     private fun renderLabels(totalMin: Int) {

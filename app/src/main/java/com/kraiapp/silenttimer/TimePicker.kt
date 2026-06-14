@@ -10,30 +10,36 @@ import android.view.MotionEvent
 import android.view.View
 import android.widget.OverScroller
 import androidx.core.content.ContextCompat
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
- * Scroll picker in 15-minute steps (index 0..95 = 0:00..23:45).
- * Hours shown large, quarter-hours small. Reports position live during scroll
- * so a paired picker can mirror it in real time.
+ * Scroll picker in 5-minute steps (index 0..287 = 0:00..23:55).
+ * The item nearest the center is emphasised (larger + bold) live while scrolling,
+ * and the picker reports its fractional position continuously so a paired picker
+ * can mirror it in real time.
  */
 class TimePicker @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null
 ) : View(context, attrs) {
 
-    private val totalSteps = 96
-    private val itemHeightDp = 44f
+    companion object {
+        const val STEP_MINUTES = 5
+        const val TOTAL_STEPS = 24 * 60 / STEP_MINUTES   // 288
+    }
+
+    private val itemHeightDp = 40f
     private val itemHeight get() = itemHeightDp * resources.displayMetrics.density
 
     var isEndTime: Boolean = true
 
     /** Fired continuously while scrolling — fractional index (e.g. 4.3). */
     var onPositionChanged: ((Float) -> Unit)? = null
-    /** Fired once the picker snaps to a final integer index (on release/fling end). */
+    /** Fired once the picker snaps to a final integer index (on release / fling end). */
     var onSelectionChanged: ((Int) -> Unit)? = null
 
-    var selectedIndex: Int = 4
+    var selectedIndex: Int = 0
         private set
 
     private var scrollY = 0f
@@ -62,27 +68,16 @@ class TimePicker @JvmOverloads constructor(
         }
     })
 
-    private val paintHour = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textAlign = Paint.Align.CENTER
-        typeface = Typeface.DEFAULT_BOLD
-    }
-    private val paintQuarter = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textAlign = Paint.Align.CENTER
-    }
-    private val paintSelected = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        textAlign = Paint.Align.CENTER
-        color = ContextCompat.getColor(context, R.color.selected_text)
-        typeface = Typeface.DEFAULT_BOLD
-    }
-    private val paintSelectionBg = Paint().apply {
-        color = ContextCompat.getColor(context, R.color.selected_bg)
-    }
+    private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
+    private val typefaceBold = Typeface.DEFAULT_BOLD
+    private val typefaceNormal = Typeface.DEFAULT
 
+    private val colorActive get() = ContextCompat.getColor(context, R.color.selected_bg)
     private val colorHour get() = ContextCompat.getColor(context, R.color.text_hour)
     private val colorQuarter get() = ContextCompat.getColor(context, R.color.text_quarter)
 
     private fun minScroll() = -height / 2f + itemHeight / 2f
-    private fun maxScroll() = (totalSteps - 1) * itemHeight - height / 2f + itemHeight / 2f
+    private fun maxScroll() = (TOTAL_STEPS - 1) * itemHeight - height / 2f + itemHeight / 2f
     private fun minScrollInt() = minScroll().toInt()
     private fun maxScrollInt() = maxScroll().toInt()
 
@@ -102,19 +97,19 @@ class TimePicker @JvmOverloads constructor(
         suppressCallback = true
         scrollY = fractionalIndex * itemHeight - height / 2f + itemHeight / 2f
         clampScroll()
-        selectedIndex = currentPosition().roundToInt().coerceIn(0, totalSteps - 1)
+        selectedIndex = currentPosition().roundToInt().coerceIn(0, TOTAL_STEPS - 1)
         suppressCallback = false
         invalidate()
     }
 
     fun setSelectedIndex(index: Int) {
-        val clamped = index.coerceIn(0, totalSteps - 1)
+        val clamped = index.coerceIn(0, TOTAL_STEPS - 1)
         setPosition(clamped.toFloat())
         selectedIndex = clamped
     }
 
     private fun snapToNearest() {
-        val nearest = currentPosition().roundToInt().coerceIn(0, totalSteps - 1)
+        val nearest = currentPosition().roundToInt().coerceIn(0, TOTAL_STEPS - 1)
         val targetScroll = nearest * itemHeight - height / 2f + itemHeight / 2f
         scroller.startScroll(0, scrollY.toInt(), 0, (targetScroll - scrollY).toInt(), 200)
         selectedIndex = nearest
@@ -154,44 +149,65 @@ class TimePicker @JvmOverloads constructor(
         super.onDraw(canvas)
         val cx = width / 2f
         val centerY = height / 2f
+        val ih = itemHeight
 
-        canvas.drawRect(0f, centerY - itemHeight / 2f, width.toFloat(),
-            centerY + itemHeight / 2f, paintSelectionBg)
+        // The item closest to the center right now (follows the finger live).
+        val activePos = currentPosition()
 
-        val firstVisible = ((scrollY - height / 2f) / itemHeight).toInt().coerceAtLeast(0)
-        val lastVisible = ((scrollY + height * 1.5f) / itemHeight).toInt().coerceAtMost(totalSteps - 1)
+        val firstVisible = ((scrollY - height / 2f) / ih).toInt().coerceAtLeast(0)
+        val lastVisible = ((scrollY + height * 1.5f) / ih).toInt().coerceAtMost(TOTAL_STEPS - 1)
 
         for (i in firstVisible..lastVisible) {
-            val itemCenterY = i * itemHeight - scrollY + centerY
-            val isHour = (i % 4 == 0)
-            val isSelected = (i == selectedIndex)
-            val label = formatLabel(i)
-            val paint: Paint
+            val itemCenterY = i * ih - scrollY + centerY
 
-            when {
-                isSelected -> {
-                    paint = paintSelected
-                    paint.textSize = if (isHour) itemHeight * 0.62f else itemHeight * 0.38f
-                }
-                isHour -> {
-                    paint = paintHour
-                    paint.color = colorHour
-                    paint.textSize = itemHeight * 0.58f
-                }
-                else -> {
-                    paint = paintQuarter
-                    paint.color = colorQuarter
-                    paint.textSize = itemHeight * 0.32f
-                }
+            val totalMin = i * STEP_MINUTES
+            val minutes = totalMin % 60
+            val isHour = (minutes == 0)
+            val isQuarter = (minutes % 15 == 0)   // :15 / :30 / :45
+
+            // How "active" is this item: 1.0 exactly at center, fading to 0 one step away.
+            val distance = abs(i - activePos)
+            val activeness = (1f - distance).coerceIn(0f, 1f)
+
+            // Base size per tier, then grow toward the active size near the center.
+            val baseSize = when {
+                isHour -> ih * 0.50f
+                isQuarter -> ih * 0.34f
+                else -> ih * 0.26f
             }
-            canvas.drawText(label, cx, itemCenterY + paint.textSize * 0.38f, paint)
+            val activeSize = when {
+                isHour -> ih * 0.66f
+                isQuarter -> ih * 0.50f
+                else -> ih * 0.44f
+            }
+            paint.textSize = baseSize + (activeSize - baseSize) * activeness
+
+            // Bold once we're close to center; bold for hours always.
+            paint.typeface = if (isHour || activeness > 0.5f) typefaceBold else typefaceNormal
+
+            // Color blends toward the strong "active" color near center.
+            val baseColor = when {
+                isHour -> colorHour
+                else -> colorQuarter
+            }
+            paint.color = blendColor(baseColor, colorActive, activeness)
+
+            canvas.drawText(formatLabel(i), cx, itemCenterY + paint.textSize * 0.36f, paint)
         }
     }
 
+    private fun blendColor(from: Int, to: Int, t: Float): Int {
+        val a = ((from ushr 24 and 0xFF) + (((to ushr 24 and 0xFF) - (from ushr 24 and 0xFF)) * t)).toInt()
+        val r = ((from ushr 16 and 0xFF) + (((to ushr 16 and 0xFF) - (from ushr 16 and 0xFF)) * t)).toInt()
+        val g = ((from ushr 8 and 0xFF) + (((to ushr 8 and 0xFF) - (from ushr 8 and 0xFF)) * t)).toInt()
+        val b = ((from and 0xFF) + (((to and 0xFF) - (from and 0xFF)) * t)).toInt()
+        return (a shl 24) or (r shl 16) or (g shl 8) or b
+    }
+
     private fun formatLabel(index: Int): String {
-        val totalMinutes = index * 15
-        val hours = totalMinutes / 60
-        val minutes = totalMinutes % 60
+        val totalMin = index * STEP_MINUTES
+        val hours = totalMin / 60
+        val minutes = totalMin % 60
         return if (minutes == 0) hours.toString() else minutes.toString()
     }
 }

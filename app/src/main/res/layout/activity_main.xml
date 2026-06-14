@@ -140,28 +140,30 @@
 
         </LinearLayout>
 
-        <!-- Center selection line top -->
+        <!-- Center selection lines bracketing the selected item (item height = 40dp) -->
         <View
             android:id="@+id/selectionLineTop"
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="@color/divider"
-            android:layout_gravity="center_vertical"/>
+            android:layout_gravity="center_vertical"
+            android:translationY="-20dp"/>
 
-        <!-- Center selection line bottom (offset by item height) -->
         <View
             android:id="@+id/selectionLineBottom"
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="@color/divider"
-            android:layout_gravity="center_vertical"/>
+            android:layout_gravity="center_vertical"
+            android:translationY="20dp"/>
 
         <!-- Label overlay left: "Silence until 20:34" -->
         <LinearLayout
             android:id="@+id/labelUntil"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
+            android:layout_gravity="center_vertical|start"
+            android:layout_marginStart="8dp"
             android:orientation="vertical"
             android:gravity="center"
             android:background="#CC333333"
@@ -187,9 +189,10 @@
         <!-- Label overlay right: "Silence for 00:15" -->
         <LinearLayout
             android:id="@+id/labelFor"
-            android:layout_width="0dp"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical|end"
+            android:layout_marginEnd="8dp"
             android:orientation="vertical"
             android:gravity="center"
             android:background="#CC333333"

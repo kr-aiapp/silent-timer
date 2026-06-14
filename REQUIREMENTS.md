@@ -11,6 +11,12 @@
 2. **Synchronizacja pickerów** — przewijanie jednej kolumny dynamicznie (na żywo,
    nie tylko po puszczeniu) przewija drugą kolumnę.
 
+2a. **Krok czasu = 5 minut** (nie 15).
+
+2b. **Podświetlenie wyboru** — element aktualnie na środku (wybierany) jest
+    powiększony i pogrubiony na żywo podczas przewijania, żeby było widać co
+    zostanie wybrane.
+
 3. **Zapamiętywanie ustawień dźwięku** — przed wyciszeniem aplikacja zapisuje
    pełny stan audio (ringer mode, poziomy głośności strumieni). Przy przywracaniu
    odtwarza DOKŁADNIE te zapisane ustawienia (nie suwak "restore volume" jako jedyne
