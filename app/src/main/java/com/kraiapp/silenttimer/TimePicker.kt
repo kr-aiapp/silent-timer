@@ -10,48 +10,56 @@ import android.view.MotionEvent
 import android.view.View
 import android.widget.OverScroller
 import androidx.core.content.ContextCompat
-import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
- * Custom scroll picker that shows time values (hours as large text, quarter-hours as small text).
- * Items are in 15-minute steps. isEndTime=true formats as clock (HH:MM), false as duration (H or :MM).
+ * Scroll picker in 15-minute steps (index 0..95 = 0:00..23:45).
+ * Hours shown large, quarter-hours small. Reports position live during scroll
+ * so a paired picker can mirror it in real time.
  */
 class TimePicker @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null
 ) : View(context, attrs) {
 
-    // Each step = 15 minutes. Range: 0..95 (24h * 4 = 96 steps, index 0 = 0:00)
     private val totalSteps = 96
     private val itemHeightDp = 44f
     private val itemHeight get() = itemHeightDp * resources.displayMetrics.density
 
     var isEndTime: Boolean = true
+
+    /** Fired continuously while scrolling — fractional index (e.g. 4.3). */
+    var onPositionChanged: ((Float) -> Unit)? = null
+    /** Fired once the picker snaps to a final integer index (on release/fling end). */
     var onSelectionChanged: ((Int) -> Unit)? = null
 
-    // selectedIndex in 0..95 (steps of 15 min)
-    var selectedIndex: Int = 4  // default: 1 hour
+    var selectedIndex: Int = 4
         private set
 
-    private var scrollY = 0f  // pixels scrolled (top of list)
+    private var scrollY = 0f
+    private var suppressCallback = false
     private val scroller = OverScroller(context)
+
     private val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
         override fun onScroll(e1: MotionEvent?, e2: MotionEvent, dx: Float, dy: Float): Boolean {
             scrollY += dy
             clampScroll()
+            firePosition()
             invalidate()
             return true
         }
 
         override fun onFling(e1: MotionEvent?, e2: MotionEvent, vx: Float, vy: Float): Boolean {
             scroller.fling(0, scrollY.toInt(), 0, (-vy).toInt(),
-                0, 0, 0, ((totalSteps - 1) * itemHeight).toInt())
+                0, 0, minScrollInt(), maxScrollInt())
             invalidate()
             return true
         }
 
-        override fun onDown(e: MotionEvent): Boolean = true
+        override fun onDown(e: MotionEvent): Boolean {
+            if (!scroller.isFinished) scroller.abortAnimation()
+            return true
+        }
     })
 
     private val paintHour = Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -73,42 +81,52 @@ class TimePicker @JvmOverloads constructor(
     private val colorHour get() = ContextCompat.getColor(context, R.color.text_hour)
     private val colorQuarter get() = ContextCompat.getColor(context, R.color.text_quarter)
 
-    fun setSelectedIndex(index: Int, smooth: Boolean = false) {
-        val clamped = index.coerceIn(0, totalSteps - 1)
-        if (smooth) {
-            scroller.startScroll(0, scrollY.toInt(), 0,
-                (clamped * itemHeight - scrollY - height / 2f + itemHeight / 2f).toInt(), 300)
-        } else {
-            scrollY = clamped * itemHeight - height / 2f + itemHeight / 2f
-            clampScroll()
-        }
-        selectedIndex = clamped
+    private fun minScroll() = -height / 2f + itemHeight / 2f
+    private fun maxScroll() = (totalSteps - 1) * itemHeight - height / 2f + itemHeight / 2f
+    private fun minScrollInt() = minScroll().toInt()
+    private fun maxScrollInt() = maxScroll().toInt()
+
+    private fun clampScroll() {
+        scrollY = scrollY.coerceIn(minScroll(), maxScroll())
+    }
+
+    /** Current fractional index based on scroll position. */
+    private fun currentPosition(): Float = (scrollY + height / 2f - itemHeight / 2f) / itemHeight
+
+    private fun firePosition() {
+        if (!suppressCallback) onPositionChanged?.invoke(currentPosition())
+    }
+
+    /** Mirror to a fractional index without firing callbacks (used by the paired picker). */
+    fun setPosition(fractionalIndex: Float) {
+        suppressCallback = true
+        scrollY = fractionalIndex * itemHeight - height / 2f + itemHeight / 2f
+        clampScroll()
+        selectedIndex = currentPosition().roundToInt().coerceIn(0, totalSteps - 1)
+        suppressCallback = false
         invalidate()
     }
 
-    private fun clampScroll() {
-        val maxScroll = (totalSteps - 1) * itemHeight - height / 2f + itemHeight / 2f
-        val minScroll = -height / 2f + itemHeight / 2f
-        scrollY = scrollY.coerceIn(minScroll, maxScroll)
+    fun setSelectedIndex(index: Int) {
+        val clamped = index.coerceIn(0, totalSteps - 1)
+        setPosition(clamped.toFloat())
+        selectedIndex = clamped
     }
 
     private fun snapToNearest() {
-        val centerY = scrollY + height / 2f - itemHeight / 2f
-        val nearest = (centerY / itemHeight).roundToInt().coerceIn(0, totalSteps - 1)
+        val nearest = currentPosition().roundToInt().coerceIn(0, totalSteps - 1)
         val targetScroll = nearest * itemHeight - height / 2f + itemHeight / 2f
         scroller.startScroll(0, scrollY.toInt(), 0, (targetScroll - scrollY).toInt(), 200)
         selectedIndex = nearest
-        onSelectionChanged?.invoke(nearest)
         invalidate()
     }
 
     override fun onTouchEvent(event: MotionEvent): Boolean {
         val handled = gestureDetector.onTouchEvent(event)
         if (event.action == MotionEvent.ACTION_UP || event.action == MotionEvent.ACTION_CANCEL) {
-            if (!scroller.isFinished) {
-                // let fling finish then snap
-            } else {
+            if (scroller.isFinished) {
                 snapToNearest()
+                onSelectionChanged?.invoke(selectedIndex)
             }
         }
         return handled || super.onTouchEvent(event)
@@ -118,11 +136,18 @@ class TimePicker @JvmOverloads constructor(
         if (scroller.computeScrollOffset()) {
             scrollY = scroller.currY.toFloat()
             clampScroll()
+            firePosition()
             if (scroller.isFinished) {
                 snapToNearest()
+                onSelectionChanged?.invoke(selectedIndex)
             }
             invalidate()
         }
+    }
+
+    override fun onSizeChanged(w: Int, h: Int, oldw: Int, oldh: Int) {
+        super.onSizeChanged(w, h, oldw, oldh)
+        setSelectedIndex(selectedIndex)
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -130,7 +155,6 @@ class TimePicker @JvmOverloads constructor(
         val cx = width / 2f
         val centerY = height / 2f
 
-        // Selection highlight
         canvas.drawRect(0f, centerY - itemHeight / 2f, width.toFloat(),
             centerY + itemHeight / 2f, paintSelectionBg)
 
@@ -141,33 +165,26 @@ class TimePicker @JvmOverloads constructor(
             val itemCenterY = i * itemHeight - scrollY + centerY
             val isHour = (i % 4 == 0)
             val isSelected = (i == selectedIndex)
-
             val label = formatLabel(i)
-            val textSize: Float
             val paint: Paint
 
             when {
                 isSelected -> {
-                    textSize = if (isHour) itemHeight * 0.62f else itemHeight * 0.38f
                     paint = paintSelected
-                    paint.textSize = textSize
+                    paint.textSize = if (isHour) itemHeight * 0.62f else itemHeight * 0.38f
                 }
                 isHour -> {
-                    textSize = itemHeight * 0.58f
                     paint = paintHour
                     paint.color = colorHour
-                    paint.textSize = textSize
+                    paint.textSize = itemHeight * 0.58f
                 }
                 else -> {
-                    textSize = itemHeight * 0.32f
                     paint = paintQuarter
                     paint.color = colorQuarter
-                    paint.textSize = textSize
+                    paint.textSize = itemHeight * 0.32f
                 }
             }
-
-            val textY = itemCenterY + paint.textSize * 0.38f
-            canvas.drawText(label, cx, textY, paint)
+            canvas.drawText(label, cx, itemCenterY + paint.textSize * 0.38f, paint)
         }
     }
 
@@ -175,14 +192,6 @@ class TimePicker @JvmOverloads constructor(
         val totalMinutes = index * 15
         val hours = totalMinutes / 60
         val minutes = totalMinutes % 60
-        return if (isEndTime) {
-            // Show as clock time HH:MM — but only show "HH" for full hours, "MM" for quarters
-            if (minutes == 0) String.format("%d", hours)
-            else String.format("%d", minutes)
-        } else {
-            // Duration: show hours as "H", quarters as "MM"
-            if (minutes == 0) String.format("%d", hours)
-            else String.format("%d", minutes)
-        }
+        return if (minutes == 0) hours.toString() else minutes.toString()
     }
 }

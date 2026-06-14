@@ -9,4 +9,6 @@
     <string name="now">NOW</string>
     <string name="permission_needed">Grant Do Not Disturb access in Settings</string>
     <string name="open_settings">Open Settings</string>
+    <string name="vibrate_on_silence">Wibracje przy wyciszeniu</string>
+    <string name="restore_volume_btn">Restore volume</string>
 </resources>
