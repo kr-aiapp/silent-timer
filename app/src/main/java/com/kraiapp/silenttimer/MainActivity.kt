@@ -56,7 +56,23 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
         checkAllPermissions()
         refreshUiForSilenceState()
+        applyRemainingTimeIfSilenced()
         updateLabels()
+    }
+
+    /**
+     * If we open the app while a silence is active, preset both pickers to the time
+     * still remaining, so the user can easily shorten/extend it.
+     */
+    private fun applyRemainingTimeIfSilenced() {
+        if (!SilenceController.isSilenced(this)) return
+        val restoreAt = SilenceController.restoreAtMillis(this)
+        if (restoreAt <= 0L) return
+        val remainingMin = ((restoreAt - System.currentTimeMillis()) / 60_000L).toInt().coerceAtLeast(0)
+        computeNow()
+        durationSteps = Math.round(remainingMin.toFloat() / step)
+        pickerDuration.setSelectedIndex(durationSteps)
+        pickerUntil.setSelectedIndex(nowSteps + durationSteps)
     }
 
     // ---------- Permissions ----------
@@ -174,8 +190,14 @@ class MainActivity : AppCompatActivity() {
         }
 
         pickerDuration.post {
-            pickerDuration.setSelectedIndex(durationSteps)
-            pickerUntil.setSelectedIndex(nowSteps + durationSteps)
+            // If a silence is already running, onResume() has set durationSteps to the
+            // remaining time — respect it; otherwise use the default.
+            if (SilenceController.isSilenced(this)) {
+                applyRemainingTimeIfSilenced()
+            } else {
+                pickerDuration.setSelectedIndex(durationSteps)
+                pickerUntil.setSelectedIndex(nowSteps + durationSteps)
+            }
             updateLabels()
         }
     }
@@ -244,7 +266,8 @@ class MainActivity : AppCompatActivity() {
     // ---------- Labels ----------
 
     private fun updateLabelsLive(durPos: Float) {
-        val totalMin = (durPos * step).toInt()
+        // Snap the displayed value to whole 5-minute steps while scrolling.
+        val totalMin = Math.round(durPos) * step
         renderLabels(totalMin)
     }
 

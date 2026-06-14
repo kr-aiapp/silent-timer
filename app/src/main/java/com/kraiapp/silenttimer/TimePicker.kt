@@ -3,6 +3,7 @@ package com.kraiapp.silenttimer
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Paint
+import android.graphics.RectF
 import android.graphics.Typeface
 import android.util.AttributeSet
 import android.view.GestureDetector
@@ -29,7 +30,7 @@ class TimePicker @JvmOverloads constructor(
         const val TOTAL_STEPS = 24 * 60 / STEP_MINUTES   // 288
     }
 
-    private val itemHeightDp = 40f
+    private val itemHeightDp = 26f
     private val itemHeight get() = itemHeightDp * resources.displayMetrics.density
 
     var isEndTime: Boolean = true
@@ -71,6 +72,17 @@ class TimePicker @JvmOverloads constructor(
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { textAlign = Paint.Align.CENTER }
     private val typefaceBold = Typeface.DEFAULT_BOLD
     private val typefaceNormal = Typeface.DEFAULT
+
+    private val boxFill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.FILL
+        color = ContextCompat.getColor(context, R.color.pick_box_fill)
+    }
+    private val boxStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        color = ContextCompat.getColor(context, R.color.pick_box_stroke)
+        strokeWidth = 2f * resources.displayMetrics.density
+    }
+    private val boxRect = RectF()
 
     private val colorActive get() = ContextCompat.getColor(context, R.color.selected_bg)
     private val colorHour get() = ContextCompat.getColor(context, R.color.text_hour)
@@ -154,6 +166,15 @@ class TimePicker @JvmOverloads constructor(
         // The item closest to the center right now (follows the finger live).
         val activePos = currentPosition()
 
+        // Decorated rounded selection box in the center band.
+        val density = resources.displayMetrics.density
+        val boxMarginX = 10f * density
+        val boxHalfH = ih * 0.66f
+        val radius = 11f * density
+        boxRect.set(boxMarginX, centerY - boxHalfH, width - boxMarginX, centerY + boxHalfH)
+        canvas.drawRoundRect(boxRect, radius, radius, boxFill)
+        canvas.drawRoundRect(boxRect, radius, radius, boxStroke)
+
         val firstVisible = ((scrollY - height / 2f) / ih).toInt().coerceAtLeast(0)
         val lastVisible = ((scrollY + height * 1.5f) / ih).toInt().coerceAtMost(TOTAL_STEPS - 1)
 
@@ -163,36 +184,28 @@ class TimePicker @JvmOverloads constructor(
             val totalMin = i * STEP_MINUTES
             val minutes = totalMin % 60
             val isHour = (minutes == 0)
-            val isQuarter = (minutes % 15 == 0)   // :15 / :30 / :45
+            val isLabeled = (minutes % 15 == 0)   // hours + :15 / :30 / :45 get a number
 
             // How "active" is this item: 1.0 exactly at center, fading to 0 one step away.
             val distance = abs(i - activePos)
             val activeness = (1f - distance).coerceIn(0f, 1f)
 
-            // Base size per tier, then grow toward the active size near the center.
-            val baseSize = when {
-                isHour -> ih * 0.50f
-                isQuarter -> ih * 0.34f
-                else -> ih * 0.26f
+            if (isLabeled) {
+                // Numbers only at 15-minute marks.
+                val baseSize = if (isHour) ih * 0.74f else ih * 0.52f
+                val activeSize = if (isHour) ih * 0.95f else ih * 0.78f
+                paint.textSize = baseSize + (activeSize - baseSize) * activeness
+                paint.typeface = if (isHour || activeness > 0.5f) typefaceBold else typefaceNormal
+                val baseColor = if (isHour) colorHour else colorQuarter
+                paint.color = blendColor(baseColor, colorActive, activeness)
+                canvas.drawText(formatLabel(i), cx, itemCenterY + paint.textSize * 0.36f, paint)
+            } else {
+                // Small dot marks the in-between 5-minute snap stops.
+                paint.typeface = typefaceNormal
+                paint.color = blendColor(colorQuarter, colorActive, activeness)
+                val dotR = (1.7f + 1.3f * activeness) * density
+                canvas.drawCircle(cx, itemCenterY, dotR, paint)
             }
-            val activeSize = when {
-                isHour -> ih * 0.66f
-                isQuarter -> ih * 0.50f
-                else -> ih * 0.44f
-            }
-            paint.textSize = baseSize + (activeSize - baseSize) * activeness
-
-            // Bold once we're close to center; bold for hours always.
-            paint.typeface = if (isHour || activeness > 0.5f) typefaceBold else typefaceNormal
-
-            // Color blends toward the strong "active" color near center.
-            val baseColor = when {
-                isHour -> colorHour
-                else -> colorQuarter
-            }
-            paint.color = blendColor(baseColor, colorActive, activeness)
-
-            canvas.drawText(formatLabel(i), cx, itemCenterY + paint.textSize * 0.36f, paint)
         }
     }
 

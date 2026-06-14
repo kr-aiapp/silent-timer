@@ -1,16 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="bg_left">#FFFFFF</color>
-    <color name="bg_right">#FAFAE8</color>
-    <color name="divider">#CCCCCC</color>
-    <color name="text_hour">#222222</color>
-    <color name="text_quarter">#AAAAAA</color>
-    <color name="selected_bg">#333333</color>
+    <!-- Translucent column tints so the floral background shows through -->
+    <color name="bg_left">#33FFFFFF</color>
+    <color name="bg_right">#3AFFE9A8</color>
+    <color name="divider">#66B59CB5</color>
+    <color name="text_hour">#3A2C44</color>
+    <color name="text_quarter">#998A7FA0</color>
+    <color name="selected_bg">#3A2C44</color>
     <color name="selected_text">#FFFFFF</color>
-    <color name="button_bg">#E0E0E0</color>
-    <color name="button_divider">#BBBBBB</color>
+    <color name="button_bg">#F2EAF0F4</color>
+    <color name="button_divider">#80B59CB5</color>
     <color name="bar_start">#66CC44</color>
     <color name="bar_end">#CCCC44</color>
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
+    <!-- Decorated in-picker selection box -->
+    <color name="pick_box_fill">#E6FFFFFF</color>
+    <color name="pick_box_stroke">#FFD46A8E</color>
 </resources>

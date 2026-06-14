@@ -95,21 +95,25 @@
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:background="@drawable/bg_floral">
 
-        <!-- Left picker bg -->
-        <View
+        <!-- Translucent column tints over the floral background -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="@color/bg_left"/>
-
-        <!-- Right picker bg -->
-        <View
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_gravity="end"
-            android:background="@color/bg_right"
-            android:id="@+id/rightBg"/>
+            android:orientation="horizontal">
+            <View
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@color/bg_left"/>
+            <View
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@color/bg_right"/>
+        </LinearLayout>
 
         <!-- Two RecyclerViews side by side -->
         <LinearLayout
@@ -140,14 +144,14 @@
 
         </LinearLayout>
 
-        <!-- Center selection lines bracketing the selected item (item height = 40dp) -->
+        <!-- Center selection lines bracketing the selected item (item height = 26dp) -->
         <View
             android:id="@+id/selectionLineTop"
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="@color/divider"
             android:layout_gravity="center_vertical"
-            android:translationY="-20dp"/>
+            android:translationY="-17dp"/>
 
         <View
             android:id="@+id/selectionLineBottom"
@@ -155,77 +159,92 @@
             android:layout_height="1dp"
             android:background="@color/divider"
             android:layout_gravity="center_vertical"
-            android:translationY="20dp"/>
+            android:translationY="17dp"/>
 
-        <!-- Label overlay left: "Silence until 20:34" -->
+        <!-- Floating labels, each centered over its own column -->
         <LinearLayout
-            android:id="@+id/labelUntil"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical|start"
-            android:layout_marginStart="8dp"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:background="#CC333333"
-            android:padding="6dp">
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal">
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/silence_until"
-                android:textColor="@color/white"
-                android:textSize="11sp"/>
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1">
 
-            <TextView
-                android:id="@+id/tvUntilTime"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="20:34"
-                android:textColor="@color/white"
-                android:textSize="22sp"
-                android:textStyle="bold"/>
-        </LinearLayout>
+                <LinearLayout
+                    android:id="@+id/labelUntil"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="@drawable/selection_box"
+                    android:elevation="4dp">
 
-        <!-- Label overlay right: "Silence for 00:15" -->
-        <LinearLayout
-            android:id="@+id/labelFor"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical|end"
-            android:layout_marginEnd="8dp"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:background="#CC333333"
-            android:padding="6dp">
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/silence_until"
+                        android:textColor="#E8E0F0"
+                        android:textSize="11sp"/>
 
-            <!-- NOW tag -->
-            <TextView
-                android:id="@+id/tvNowTag"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/now"
-                android:textColor="@color/white"
-                android:textSize="9sp"
-                android:background="#888888"
-                android:paddingStart="4dp"
-                android:paddingEnd="4dp"
-                android:visibility="gone"/>
+                    <TextView
+                        android:id="@+id/tvUntilTime"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="20:34"
+                        android:textColor="@color/white"
+                        android:textSize="24sp"
+                        android:textStyle="bold"/>
+                </LinearLayout>
+            </FrameLayout>
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/silence_for"
-                android:textColor="@color/white"
-                android:textSize="11sp"/>
+            <FrameLayout
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1">
 
-            <TextView
-                android:id="@+id/tvForDuration"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="00:15"
-                android:textColor="@color/white"
-                android:textSize="22sp"
-                android:textStyle="bold"/>
+                <LinearLayout
+                    android:id="@+id/labelFor"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:orientation="vertical"
+                    android:gravity="center"
+                    android:background="@drawable/selection_box"
+                    android:elevation="4dp">
+
+                    <TextView
+                        android:id="@+id/tvNowTag"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/now"
+                        android:textColor="@color/white"
+                        android:textSize="9sp"
+                        android:background="#C04A8E"
+                        android:paddingStart="5dp"
+                        android:paddingEnd="5dp"
+                        android:visibility="gone"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/silence_for"
+                        android:textColor="#E8E0F0"
+                        android:textSize="11sp"/>
+
+                    <TextView
+                        android:id="@+id/tvForDuration"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="00:15"
+                        android:textColor="@color/white"
+                        android:textSize="24sp"
+                        android:textStyle="bold"/>
+                </LinearLayout>
+            </FrameLayout>
+
         </LinearLayout>
 
     </FrameLayout>

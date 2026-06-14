@@ -57,11 +57,15 @@ object SilenceController {
     fun mute(ctx: Context, durationMinutes: Int, vibrate: Boolean) {
         val audio = ctx.getSystemService(Context.AUDIO_SERVICE) as AudioManager
 
-        // Save current state so we can restore it exactly
         val p = prefs(ctx).edit()
-        p.putInt(KEY_RINGER_MODE, audio.ringerMode)
-        p.putInt(KEY_RING_VOL, audio.getStreamVolume(AudioManager.STREAM_RING))
-        p.putInt(KEY_NOTIF_VOL, audio.getStreamVolume(AudioManager.STREAM_NOTIFICATION))
+        // Only capture the original audio state the FIRST time we mute. If we're
+        // already silenced (e.g. user re-applies a new timer), keep the original
+        // saved state so restore brings back the real pre-mute settings.
+        if (!isSilenced(ctx)) {
+            p.putInt(KEY_RINGER_MODE, audio.ringerMode)
+            p.putInt(KEY_RING_VOL, audio.getStreamVolume(AudioManager.STREAM_RING))
+            p.putInt(KEY_NOTIF_VOL, audio.getStreamVolume(AudioManager.STREAM_NOTIFICATION))
+        }
         p.putBoolean(KEY_IS_SILENCED, true)
         p.putBoolean(KEY_VIBRATE, vibrate)
 
@@ -123,14 +127,22 @@ object SilenceController {
             ctx, ALARM_REQUEST, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+
+        // setAlarmClock is the most reliable trigger: it is treated as a user-visible
+        // alarm, so it fires on time even in Doze and survives aggressive OEM battery
+        // management (Samsung etc.) without needing the SCHEDULE_EXACT_ALARM toggle.
+        val showIntent = PendingIntent.getActivity(
+            ctx, 7, Intent(ctx, MainActivity::class.java),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && !am.canScheduleExactAlarms()) {
-                am.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi)
-            } else {
-                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi)
-            }
+            am.setAlarmClock(AlarmManager.AlarmClockInfo(triggerAtMillis, showIntent), pi)
         } catch (e: SecurityException) {
-            am.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi)
+            try {
+                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi)
+            } catch (e2: SecurityException) {
+                am.set(AlarmManager.RTC_WAKEUP, triggerAtMillis, pi)
+            }
         }
     }
 
