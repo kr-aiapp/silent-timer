@@ -190,8 +190,9 @@ class TimePicker @JvmOverloads constructor(
             val distance = abs(i - activePos)
             val activeness = (1f - distance).coerceIn(0f, 1f)
 
+            // Numbers only at 15-minute marks; the 5-minute snap stops in between
+            // are left blank (no dots) so scrolling reads as hours passing by.
             if (isLabeled) {
-                // Numbers only at 15-minute marks.
                 val baseSize = if (isHour) ih * 0.74f else ih * 0.52f
                 val activeSize = if (isHour) ih * 0.95f else ih * 0.78f
                 paint.textSize = baseSize + (activeSize - baseSize) * activeness
@@ -199,12 +200,6 @@ class TimePicker @JvmOverloads constructor(
                 val baseColor = if (isHour) colorHour else colorQuarter
                 paint.color = blendColor(baseColor, colorActive, activeness)
                 canvas.drawText(formatLabel(i), cx, itemCenterY + paint.textSize * 0.36f, paint)
-            } else {
-                // Small dot marks the in-between 5-minute snap stops.
-                paint.typeface = typefaceNormal
-                paint.color = blendColor(colorQuarter, colorActive, activeness)
-                val dotR = (1.7f + 1.3f * activeness) * density
-                canvas.drawCircle(cx, itemCenterY, dotR, paint)
             }
         }
     }
