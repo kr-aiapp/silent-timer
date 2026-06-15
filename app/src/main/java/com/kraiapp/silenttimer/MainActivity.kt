@@ -70,6 +70,7 @@ class MainActivity : AppCompatActivity() {
         if (restoreAt <= 0L) return
         val remainingMin = ((restoreAt - System.currentTimeMillis()) / 60_000L).toInt().coerceAtLeast(0)
         computeNow()
+        pickerUntil.minIndex = nowSteps
         durationSteps = Math.round(remainingMin.toFloat() / step)
         pickerDuration.setSelectedIndex(durationSteps)
         pickerUntil.setSelectedIndex(nowSteps + durationSteps)
@@ -159,6 +160,10 @@ class MainActivity : AppCompatActivity() {
         parent.removeView(binding.rvDuration)
         parent.addView(pickerUntil, leftIndex)
         parent.addView(pickerDuration, leftIndex + 2) // +2 to sit after the divider
+
+        // The "until" picker can't go earlier than the current time; duration can't go below 0.
+        pickerUntil.minIndex = nowSteps
+        pickerDuration.minIndex = 0
 
         // Live mirroring: until = nowSteps + duration  (constant offset in 5-min steps)
         pickerDuration.onPositionChanged = { pos ->

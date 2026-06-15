@@ -38,6 +38,9 @@ class TimePicker @JvmOverloads constructor(
 
     var isEndTime: Boolean = true
 
+    /** Lowest selectable index (the "until" picker can't go below the current time). */
+    var minIndex: Int = 0
+
     /** Fired continuously while scrolling — fractional index (e.g. 4.3). */
     var onPositionChanged: ((Float) -> Unit)? = null
     /** Fired once the picker snaps to a final integer index (on release / fling end). */
@@ -91,7 +94,7 @@ class TimePicker @JvmOverloads constructor(
     private val colorHour get() = ContextCompat.getColor(context, R.color.text_hour)
     private val colorQuarter get() = ContextCompat.getColor(context, R.color.text_quarter)
 
-    private fun minScroll() = -height / 2f + itemHeight / 2f
+    private fun minScroll() = minIndex * itemHeight - height / 2f + itemHeight / 2f
     private fun maxScroll() = (TOTAL_STEPS - 1) * itemHeight - height / 2f + itemHeight / 2f
     private fun minScrollInt() = minScroll().toInt()
     private fun maxScrollInt() = maxScroll().toInt()
@@ -109,22 +112,24 @@ class TimePicker @JvmOverloads constructor(
 
     /** Mirror to a fractional index without firing callbacks (used by the paired picker). */
     fun setPosition(fractionalIndex: Float) {
+        // Stop any in-flight fling/snap so the mirror isn't fought by an old animation.
+        if (!scroller.isFinished) scroller.abortAnimation()
         suppressCallback = true
         scrollY = fractionalIndex * itemHeight - height / 2f + itemHeight / 2f
         clampScroll()
-        selectedIndex = currentPosition().roundToInt().coerceIn(0, TOTAL_STEPS - 1)
+        selectedIndex = currentPosition().roundToInt().coerceIn(minIndex, TOTAL_STEPS - 1)
         suppressCallback = false
         invalidate()
     }
 
     fun setSelectedIndex(index: Int) {
-        val clamped = index.coerceIn(0, TOTAL_STEPS - 1)
+        val clamped = index.coerceIn(minIndex, TOTAL_STEPS - 1)
         setPosition(clamped.toFloat())
         selectedIndex = clamped
     }
 
     private fun snapToNearest() {
-        val nearest = currentPosition().roundToInt().coerceIn(0, TOTAL_STEPS - 1)
+        val nearest = currentPosition().roundToInt().coerceIn(minIndex, TOTAL_STEPS - 1)
         val targetScroll = nearest * itemHeight - height / 2f + itemHeight / 2f
         scroller.startScroll(0, scrollY.toInt(), 0, (targetScroll - scrollY).toInt(), 200)
         selectedIndex = nearest
