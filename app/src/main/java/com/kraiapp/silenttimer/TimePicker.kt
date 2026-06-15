@@ -30,7 +30,10 @@ class TimePicker @JvmOverloads constructor(
         const val TOTAL_STEPS = 24 * 60 / STEP_MINUTES   // 288
     }
 
-    private val itemHeightDp = 26f
+    // Each 5-minute step is 1/3 of the gap between 15-minute numbers, so the numbers
+    // sit close together (like the old every-5-min layout) while scrolling still
+    // snaps every 5 minutes.
+    private val itemHeightDp = 14f
     private val itemHeight get() = itemHeightDp * resources.displayMetrics.density
 
     var isEndTime: Boolean = true
@@ -166,10 +169,10 @@ class TimePicker @JvmOverloads constructor(
         // The item closest to the center right now (follows the finger live).
         val activePos = currentPosition()
 
-        // Decorated rounded selection box in the center band.
+        // Decorated rounded selection box in the center band (≈ one 15-min gap tall).
         val density = resources.displayMetrics.density
         val boxMarginX = 10f * density
-        val boxHalfH = ih * 0.66f
+        val boxHalfH = ih * 1.5f
         val radius = 11f * density
         boxRect.set(boxMarginX, centerY - boxHalfH, width - boxMarginX, centerY + boxHalfH)
         canvas.drawRoundRect(boxRect, radius, radius, boxFill)
@@ -186,15 +189,16 @@ class TimePicker @JvmOverloads constructor(
             val isHour = (minutes == 0)
             val isLabeled = (minutes % 15 == 0)   // hours + :15 / :30 / :45 get a number
 
-            // How "active" is this item: 1.0 exactly at center, fading to 0 one step away.
+            // How "active" is this item: 1.0 at center, fading out toward the next mark.
             val distance = abs(i - activePos)
-            val activeness = (1f - distance).coerceIn(0f, 1f)
+            val activeness = (1f - distance / 1.5f).coerceIn(0f, 1f)
 
             // Numbers only at 15-minute marks; the 5-minute snap stops in between
             // are left blank (no dots) so scrolling reads as hours passing by.
+            // Text sizes are in dp (independent of the small step height).
             if (isLabeled) {
-                val baseSize = if (isHour) ih * 0.74f else ih * 0.52f
-                val activeSize = if (isHour) ih * 0.95f else ih * 0.78f
+                val baseSize = if (isHour) 19f * density else 13f * density
+                val activeSize = if (isHour) 26f * density else 19f * density
                 paint.textSize = baseSize + (activeSize - baseSize) * activeness
                 paint.typeface = if (isHour || activeness > 0.5f) typefaceBold else typefaceNormal
                 val baseColor = if (isHour) colorHour else colorQuarter

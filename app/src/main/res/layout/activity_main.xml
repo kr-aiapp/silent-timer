@@ -144,14 +144,14 @@
 
         </LinearLayout>
 
-        <!-- Center selection lines bracketing the selected item (item height = 26dp) -->
+        <!-- Center selection lines bracketing the selected band (≈ one 15-min gap) -->
         <View
             android:id="@+id/selectionLineTop"
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="@color/divider"
             android:layout_gravity="center_vertical"
-            android:translationY="-17dp"/>
+            android:translationY="-21dp"/>
 
         <View
             android:id="@+id/selectionLineBottom"
@@ -159,7 +159,7 @@
             android:layout_height="1dp"
             android:background="@color/divider"
             android:layout_gravity="center_vertical"
-            android:translationY="17dp"/>
+            android:translationY="21dp"/>
 
         <!-- Floating labels, each centered over its own column -->
         <LinearLayout
